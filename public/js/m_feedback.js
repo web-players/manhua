@@ -1,139 +1,139 @@
-function no_conten() {
-    $("#loadding").hide()
-}
-function total() {
-    var a = "/api/feedback/total";
-    T.restPost(a, null,
-        function(a) {
-            0 == a.code && ($("#total_count").html(a.data), 0 == a.data && (width(), $("#loading").hide(), no_conten()))
-        })
-}
-function del_line() {
-    $(".comment_tabCon ul li").first().find(".comment_main").css({
-        "border-top": 0
-    })
-}
-function opentext(a) {
-    $(a).hide().siblings("p.hei").removeClass("hei")
-}
-function fadeIn() {
-    var a, b;
-    for (a = 0; 15 > a; a++) $(".comment_tabCon ul li.hide").first().addClass("li_fadeInUp").removeClass("hide");
-    b = $(".comment_tabCon ul li.hide").length,
-    30 >= b && b > 15 && $(window).on("scroll", request_func),
-    15 >= b && 0 != b && $(window).on("scroll", request_func2)
-}
-function width() {
-    var a = $(window).width(),
-        b = a - 80;
-    $(".comment_main").width(b)
-}
+		var imgNum = 0;
+		fileList = [];
+		var curFile;
+		$(".upload_img_wrap .upload_img").bind("click", function(ev) {
+			var index = ev.currentTarget.dataset.id;
+			var that = this;
+			if(index == 1) {
+				$("#file1").click();
+				$("#file1").unbind().change(function(e) { 
+					var index = e.currentTarget.dataset.id;
+					if($('#file').val() == '') {
+						return false;
+					}
+					curFile = this.files;
+					fileList = fileList.concat(Array.from(curFile));
+					$(that).hide();
+					var filePath = $(this).val();
+					changeImg(e, filePath, index);
+					imgNum++;
+					if(imgNum<3){
+						$(".upload_img").eq(1).show();
+					}
+					$(".upload_img_length").html(imgNum);
+				});
+			} else if(index == 2) {
+				$("#file2").click();
+				$("#file2").unbind().change(function(e) {
+					var index = e.currentTarget.dataset.id;
+					if($('#file').val() == '') {
+						return false;
+					}
+					curFile = this.files;
+					fileList = fileList.concat(Array.from(curFile));					
+					$(that).hide();
+					var filePath = $(this).val();
+					changeImg(e, filePath, index);
+					imgNum++;
+					if(imgNum<3){
+						$(".upload_img").eq(2).show();
+					}
+					$(".upload_img_length").html(imgNum);
+				})
+			} else if(index == 3) {
+				$("#file3").click();
+				$("#file3").unbind().change(function(e) {
+					var index = e.currentTarget.dataset.id;
+					if($('#file').val() == '') {
+						return false;
+					}
+					curFile = this.files;
+					fileList = fileList.concat(Array.from(curFile));					
+					var filePath = $(this).val();
+					changeImg(e, filePath, index);
+					$(that).hide();
+					imgNum++;
+					$(".upload_img_length").html(imgNum);
+				})
+			}
+		})
+
+		function changeImg(e, filePath, index) {
+			fileFormat = filePath.substring(filePath.lastIndexOf(".")).toLowerCase();
+			if(!fileFormat.match(/.png|.jpg|.jpeg|.gif/)) {
+				alert('文件格式必须为：png/jpg/jpeg/gif');
+				return;
+			}
+			var reader = new FileReader();
+			reader.readAsDataURL(e.target.files[0]);
+			reader.onloadend = function() {    
+				var dataURL = reader.result;
+				$("#imgBox").html($("#imgBox").html() + '<div class="imgContainer" data-index=' + index + '><img   src=' + dataURL + ' onclick="imgDisplay(this)"></div>');
+				$("#img"+index).html(dataURL);
+			};
+		}
+
+		function imgDisplay(obj) {
+			var src = $(obj).attr("src");
+			var imgHtml = '<div style="width: 100%;height: 100vh;overflow: auto;background: rgba(0,0,0,0.5);text-align: center;position: fixed;top: 0;left: 0;z-index: 20000;display: flex;justify-content: center;    align-items: center;"><img src=' + src + ' style="margin-top: 100px;width: 96%;margin-bottom: 100px;"/><p style="font-size: 50px;position: fixed;top: 30px;right: 30px;color: #000;cursor: pointer;" onclick="closePicture(this)">×</p></div>'
+			$('body').append(imgHtml);
+		}
+		
+		function closePicture(obj) {
+			$(obj).parent("div").remove();
+		}
+
+
+/*
+ * 发表评论
+*/
 function addCom() {
-    var d, e, a = $("a#comBoxBtn").html(),
-        b = $.trim($("#contact").val()),
-        c = $.trim($("#content").val());
-    return "" == c ? (layer.msg("反馈内容不能为空喔"), !1) : c.length > 180 ? (layer.msg("反馈内容不能超过180个字符喔"), !1) : ($("a#comBoxBtn").off("click").html("发表中.."), d = "/home/api/feedbackadd", e = {
-        contact: b,
-        content: c
-    },
-        $.post(d, e,
-            function(b) {
-                var d, e;
-                if(b.code==0){
-                    layer.msg(b.msg+'!');
-                    $("a#comBoxBtn").html(a);
+	contact = $.trim($("#contact").val()); //联系人
+	content = $.trim($("#content").val()); // 反馈的内容
+	if(content==''){
+        dialog.alert({
+		    title: '错误提示',
+            msg:'<b style="color:red;">反馈内容不能为空喔</b>',
+            buttons:['知道了'],
+        });	
+		return;
+	}
+	if(fileList.length > 3){
+        dialog.alert({
+		    title: '错误提示',
+            msg:'<b style="color:red;">最多允许上传3张图片</b>',
+            buttons:['知道了'],
+        });	
+		return;		
+    } else {
+		appCenter.showLoadingToast('提交中...');
+		var formData = new FormData();
+        for (var i = 0, len = fileList.length; i < len; i++) {
+            formData.append('upfile[]', fileList[i]);
+        }
+        formData.append('contact', contact);
+		formData.append('content', content);
+        $.ajax({
+            url: '/home/api/feedbackadd',
+            type: 'post',
+            data: formData,
+            dataType: 'json',
+            processData: false,
+            contentType: false,
+            success: function (data) {
+				window.toast.hide();
+                if (data.code == 0) {
+                    appCenter.showSuccToast('反馈成功');
+					setTimeout(function(){ location.reload(); }, 1000);				
+                } else {
+                    dialog.alert({
+		                title: '错误提示',
+                        msg:'<b style="color:red;">'+data.msg+'</b>',
+                        buttons:['知道了'],
+                    });
                 }
-                0 == b.code ? (b.data.feedback, $("#contact").val(""), $("#content").val(""), $(".review_pop,.mask").hide(), $("#replyeff").show().html(b.msg + "!"), setTimeout(function() {
-                        $("#replyeff").hide()
-                    },
-                    2e3), addliBefore(b.data.feedback), d = $("#total_count"), e = parseInt(d.html()), d.html(e + 1), $("a#comBoxBtn").html(a), $("a#comBoxBtn").on("click", addCom)) : (alert(b.msg), $("a#comBoxBtn").html(a), $("a#comBoxBtn").on("click", addCom))
-            }))
+            }
+        });	
+	    return;	
+	}
 }
-function addliBefore(a) {
-    var f, g, h, b = a.id,
-        c = Date.parse(new Date(a.create_time)),
-        d = "0" + a.user_id + c + a.id + "0",
-        e = "";
-    if (e += '<li class="hide"><div class="auimg"><img src="' + a.user.avatar + '" class="user_img" onerror="this.src=window.cdnStaticRoot+' + "'/dist/ppm/images/pic_tx.png'" + '">', e += '</div><div class="comment_main"><span class="user_name">' + a.user.nickname + "</span>", e += '<div class="com_container">', 0 != a.parentFeedbacks.length) {
-        for (f = a.parentFeedbacks, b = f[0].id, e += '<div class="masterCom">', g = 0; g < f.length; g++) h = f[g],
-            e += '<div class="lou" name="' + d + '"><p><span><em>' + h.user.nickname + '</em>：</span><span class="replyLou">',
-            e += "" + h.content + "</p>",
-            e += '<div class="masterNum">' + (g + 1) + "</div></div>";
-        e += "</div>"
-    }
-    e += "<p>" + a.content + "</p>",
-        e += "</div>",
-        e += '<span class="user_time">' + a.show_time + "</span></div></li>",
-        $(".comment_tabCon ul").prepend(e),
-        width(),
-        del_line(),
-        fadeIn(),
-        $(".comment_tabCon ul li").eq(1).find(".comment_main").css({
-            "border-top": "1px solid #cbcbcb"
-        })
-}
-var request_func, request_func2, request_feedback_func, myFeedback = {
-    page: 1,
-    myFeedback_ajax: function() {
-        $("#loadding").hide(),
-            $(window).unbind("scroll", request_feedback_func);
-        var a = "/api/feedback/all";
-        T.restPost(a, {
-                p: myFeedback.page
-            },
-            function(a) {
-                var b, c, d, e, f, g, h, i, j;
-                if (0 == a.code) {
-                    if (0 == a.data.feedbacks.length) return no_conten(),
-                        $("#loading").hide(),
-                        !1;
-                    for (b = 0; b < a.data.feedbacks.length; b++) {
-                        if (c = a.data.feedbacks[b], d = c.parent_id, e = Date.parse(new Date(c.create_time)), f = "0" + c.user_id + e + c.id + "0", g = "", g += '<li class="hide"><div class="auimg"><img src="' + c.user.avatar + '" class="user_img" onerror="this.src=window.cdnStaticRoot+' + "'/dist/ppm/images/pic_tx.png'" + '">', g += '</div><div class="comment_main"><span class="user_name">' + c.user.nickname + "</span>", g += '<div class="com_container">', 0 != c.parentFeedbacks.length) {
-                            for (h = c.parentFeedbacks, d = h[0].id, g += '<div class="masterCom">', i = 0; i < h.length; i++) j = h[i],
-                                g += '<div class="lou" name="' + f + '"><p><span><em>' + j.user.nickname + '</em>：</span><span class="replyLou">',
-                                g += "" + j.content + "</p>",
-                                g += '<div class="masterNum">' + (i + 1) + "</div></div>";
-                            g += "</div>"
-                        }
-                        g += "<p>" + c.content + "</p>",
-                            g += "</div>",
-                            g += '<span class="user_time">' + c.show_time + "</span></div></li>",
-                            $(".comment_tabCon ul").append(g),
-                        c.parentFeedbacks.length > 3 && ($("div.lou[name='" + f + "']").hide().last().before('<div class="show_morelou" onclick="moreLou(this)">展开隐藏次元</div>'), $("div.lou[name='" + f + "']:first,div.lou[name='" + f + "']:last").show()),
-                            width(),
-                            del_line()
-                    }
-                    fadeIn()
-                }
-            },
-            function(a) {
-                console.log(a.msg),
-                    $(window).bind("scroll", request_feedback_func)
-            })
-    }
-};
-total(),
-    request_func = function() {
-        var a = $(document).height();
-        $(window).scrollTop() + $(window).height() >= a - 150 && ($(window).off("scroll", request_func), setTimeout(function() {
-                fadeIn()
-            },
-            800))
-    },
-    request_func2 = function() {
-        var a = $(document).height();
-        $(window).scrollTop() + $(window).height() >= a - 150 && ($(window).off("scroll", request_func), setTimeout(function() {
-                fadeIn()
-            },
-            800))
-    },
-    request_feedback_func = function() {
-        console.log("request_feedback_func");
-        var a = $(document).height();
-        $(window).scrollTop() + $(window).height() >= a - m_global.document_hei && (myFeedback.page++, myFeedback.myFeedback_ajax(), $("#loadding").show())
-    },
-    $(function() {
-        myFeedback.page = 1,
-            myFeedback.myFeedback_ajax(),
-            $(window).bind("scroll", request_feedback_func)
-    });

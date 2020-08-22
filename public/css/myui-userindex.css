@@ -159,6 +159,7 @@
 }
 .layui-m-layer0 .layui-m-layerchild {
     width: 90%;
+	max-width: 100%;
 }
 .layui-m-layerchild h3 {
     padding:0 10px;
@@ -176,6 +177,7 @@
 }
 .layui-m-layercont {
     padding:.3rem .2rem;
+	line-height: 0.2rem;
     text-align:center
 }
 .layui-m-layerbtn, .layui-m-layerbtn span {
